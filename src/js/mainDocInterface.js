@@ -1,7 +1,7 @@
 $(document).ready(function(){
 	// Check for the various File API support.
 	if (window.File && window.FileReader && window.FileList && window.Blob) {
-		JsonImporter.JsonImporter.import(GameObject.GameObject, "../json/sock.json");
+		JsonImporter.JsonImporter.import(GameObject.GameObject, "src/json/sock.json");
 	} else {
 	  	alert('The File APIs are not fully supported in this browser.');
 	}

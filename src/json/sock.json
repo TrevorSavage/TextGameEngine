@@ -1,0 +1,13 @@
+{
+	"name" : "sock",
+	"displayName": "sock",
+	"aliases": ["socks"],
+	"shortDesc": "A smelly grey sock",
+	"longDesc": "A stinky grey, woolen sock. Probably worn by Salazar Slytherin himself, judging by the odor of slimy reptile.",
+	"defaultResponse": "There are many things that you can do with a sock, but this is not one of them.",
+	"verbMap": {
+		"get": "Against your better judgement, you pocket the disgusting sock, storing it in the deepest pocket of your robes",
+		"wear": "Ugh, no. This thing is revolting.",
+		"sniff": "The smell is apparent even without deliberately subjecting yourself to it's stench. It smells like snake feces."
+	}
+}

@@ -1,0 +1,29 @@
+{
+  "name": "pagessite",
+  "version": "1.0.0",
+  "description": "a simple text-based game",
+  "main": "dist/app.js",
+  "scripts": {
+    "build": "webpack --config webpack.config.js",
+    "start": "electron ./dist/electron_main.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TrevorSavage/TrevorSavage.github.io.git"
+  },
+  "author": "Trevor Savage",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/TrevorSavage/TrevorSavage.github.io/issues"
+  },
+  "homepage": "https://github.com/TrevorSavage/TrevorSavage.github.io#readme",
+  "dependencies": {
+    "@types/jquery": "^3.2.15",
+    "electron": "^1.7.9",
+    "jquery": "^3.2.1"
+  },
+  "devDependencies": {
+    "ts-loader": "^3.0.5",
+    "webpack": "^3.8.1"
+  }
+}

@@ -1,7 +1,13 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-class AdjoiningRoomsMap {
-    constructor(north, south, east, west, up, down) {
+
+export class AdjoiningRoomsMap {
+    north: string;
+    south: string;
+    east: string;
+    west: string;
+    up: string;
+    down: string;
+
+    constructor(north: string, south: string, east: string, west: string, up: string, down: string) {
         this.north = north;
         this.south = south;
         this.east = east;
@@ -9,6 +15,7 @@ class AdjoiningRoomsMap {
         this.up = up;
         this.down = down;
     }
+
     constructRoomsMapWithNullRefs() {
         return new AdjoiningRoomsMap(null, null, null, null, null, null);
     }

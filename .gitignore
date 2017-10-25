@@ -38,6 +38,7 @@ Thumbs.db
 
 # My custom ignores #
 #####################
+node_modules
 .project
 .settings/*
 TextAdventureEngine.sublime-workspace

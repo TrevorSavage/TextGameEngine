@@ -1,14 +1,19 @@
 {
     "version": "1.0.0",
     "compilerOptions": {
-        "module": "commonjs",
-        "lib": ["es5", "es6"],
+        "lib": ["es5", "es6", "dom"],
         "target": "es6",
-        "outFile": "src/js/main.js",
+        "module": "commonjs",
+        "outDir": "dist",
+        "sourceMap": true,
         "moduleResolution": "node",
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true
     },
+    "include": [
+        "src/**/*.ts",
+        "app.ts"
+    ],
     "exclude": [
         "node_modules"
     ]

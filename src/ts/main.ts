@@ -19,9 +19,7 @@ export default class Main {
         Main.mainWindow.loadURL(url);
         Main.mainWindow.on('closed', Main.onClose);
     }
-    static main(
-        app: Electron.App,
-        browserWindow: typeof BrowserWindow){
+    static main(app: Electron.App, browserWindow: typeof BrowserWindow){
         // we pass the Electron.App object and the 
         // Electron.BrowserWindow into this function
         // so this class1 has no dependencies.  This

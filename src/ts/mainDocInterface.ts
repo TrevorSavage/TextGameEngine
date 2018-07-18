@@ -1,11 +1,13 @@
 import { GameInstance } from "./gameinstance";
 import { InputParser } from "./inputparser";
+import { ActionHandler } from "./actionhandler";
 
-var $ = require("jquery");
+let $ = require("jquery");
 
 $(document).ready(function(){
 
-	let gi = new GameInstance("HPAssets");
+	let gi = new GameInstance();
+	gi.initFromAssets("assets/HPAssets");
 
 	$('#mainInput').bind("enterKey",function(e, inputVal){
 	   	let pResult = InputParser.parse(inputVal);
@@ -21,13 +23,7 @@ $(document).ready(function(){
 
 	function formatOutput(parseResult) {
 		if(parseResult.isValid()){
-			//TODO: replace this placeholder logic
-			let outputString = parseResult.verb + " " + parseResult.nounOne;
-			if(parseResult.prep != null && parseResult.nounTwo != null){
-				let partTwo = " " + parseResult.prep + " " + parseResult.nounTwo
-				outputString += partTwo;
-			}
-			return outputString;
+			return ActionHandler.takeAction(gi, parseResult);
 		}
 		else return "INCORRECT: " + parseResult.toString();
 

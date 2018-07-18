@@ -60,7 +60,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 1);
+/******/ 	return __webpack_require__(__webpack_require__.s = 3);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -70,9 +70,108 @@
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-class GameObject {
+class Serializable {
+    constructor(jsonTree) {
+        if (jsonTree == null)
+            throw new Error("Attempted initialization of '" + this.constructor.name + "' object with null null/undefined json object");
+        this.deserialize(jsonTree);
+    }
+    serialize() {
+        throw new Error("Method 'serialize' must be implemented in class '" + this.constructor.name + "'");
+    }
+    deserialize(jsonTree) {
+        throw new Error("Method 'deserialize' must be implemented in class '" + this.constructor.name + "'");
+    }
+    getProperty(obj, prop, isNullable = false) {
+        let thisProp = "_" + prop;
+        if (!obj.hasOwnProperty(prop))
+            throw new ReferenceError("Property '" + prop + "' must be defined for " + this.constructor.name + " object");
+        else if (!isNullable && (obj[prop] == undefined || obj[prop] == null))
+            throw new ReferenceError("Property '" + prop + "' must be non-null for object " + this.constructor.name);
+        else if (obj[prop] != null && (typeof obj[prop] != typeof this[thisProp]))
+            throw new Error("Invalid type for property '" + prop + "' of " + this.constructor.name + ". Expected " + typeof this[thisProp] + ", got " + typeof obj[prop]);
+        else
+            return obj[prop];
+    }
+}
+exports.Serializable = Serializable;
+
+
+/***/ }),
+/* 1 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const room_1 = __webpack_require__(4);
+const playerstate_1 = __webpack_require__(8);
+const jsonImporter_1 = __webpack_require__(9);
+class GameInstance {
     constructor() {
-        this._verbMap = {};
+        this._rooms = new Array();
+    }
+    get Rooms() {
+        return this._rooms;
+    }
+    set Rooms(value) {
+        this._rooms = value;
+    }
+    getRoomByName(name) {
+        for (let room of this.Rooms) {
+            if (room.Name == name)
+                return room;
+        }
+    }
+    get PlayerState() {
+        return this._playerState;
+    }
+    set PlayerState(value) {
+        this._playerState = value;
+    }
+    initFromAssets(assetRoot) {
+        GameInstance.assetsObject = jsonImporter_1.JsonImporter.importJsonDirectory(assetRoot, true);
+        //just need to worry about importing and adding rooms objects here. Each room is responsible for instantiating it's own objects and NPCs
+        if (GameInstance.assetsObject.rooms) {
+            for (let r in GameInstance.assetsObject.rooms) {
+                let roomData = GameInstance.assetsObject.rooms[r];
+                let room = new room_1.Room(roomData);
+                this._rooms.push(room);
+            }
+        }
+        else {
+            throw new Error("required directory 'rooms' missing from asset root");
+        }
+        if (GameInstance.assetsObject.player) {
+            this.PlayerState = new playerstate_1.PlayerState(GameInstance.assetsObject.player);
+        }
+        else {
+            throw new Error("required file 'player.json' missing from asset root");
+        }
+    }
+}
+GameInstance.assetsObject = null;
+exports.GameInstance = GameInstance;
+
+
+/***/ }),
+/* 2 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const serializable_1 = __webpack_require__(0);
+const verbaction_1 = __webpack_require__(5);
+class GameObject extends serializable_1.Serializable {
+    constructor(jsonTree) {
+        super(jsonTree);
+        this._name = "";
+        this._displayName = "";
+        this._aliases = [];
+        this._shortDesc = "";
+        this._longDesc = "";
+        this._defaultResponse = "";
     }
     getResponse(verb) {
         if (this._verbMap[verb] != null) {
@@ -85,21 +184,32 @@ class GameObject {
     get Name() {
         return this._name;
     }
+    set Name(value) {
+        this._name = value;
+    }
+    get DisplayName() {
+        return this._displayName;
+    }
+    set DisplayName(value) {
+        this._displayName = value;
+    }
     get VerbMap() {
         return this._verbMap;
     }
     get DefaultResponse() {
         return this._defaultResponse;
     }
-    getProperty(obj, prop) {
-        if (!obj.hasOwnProperty(prop))
-            throw new ReferenceError("Property " + prop + " not found for " + typeof this + " object");
-        else if (obj[prop] == undefined || obj[prop] == null)
-            throw new ReferenceError("Property " + prop + " must be defined for object " + typeof this);
-        else if (typeof obj[prop] != typeof this[prop])
-            throw new Error("Invalid type for property " + prop + " of " + typeof this + ". Expected " + typeof this[prop] + ", got " + typeof obj[prop]);
-        else
-            return obj[prop];
+    get ShortDesc() {
+        return this._shortDesc;
+    }
+    set ShortDesc(value) {
+        this._shortDesc = value;
+    }
+    get LongDesc() {
+        return this._longDesc;
+    }
+    set LongDesc(value) {
+        this._longDesc = value;
     }
     serialize() { }
     deserialize(jsonTree) {
@@ -109,12 +219,8 @@ class GameObject {
         this._shortDesc = this.getProperty(jsonTree, "shortDesc");
         this._longDesc = this.getProperty(jsonTree, "longDesc");
         this._defaultResponse = this.getProperty(jsonTree, "defaultResponse");
-        this._verbMap = this.getProperty(jsonTree, "verbMap");
-        for (let key in this._verbMap) {
-            if (typeof key != "string")
-                throw new Error("Invalid key type found in verbMap of " + typeof this + ". Expected string, got " + typeof key);
-            else if (typeof this._verbMap[key] != "string" && this._verbMap[key] != null)
-                throw new Error("Invalid value found in verbmap of " + typeof this + " for key: " + key + ". Expected string, got " + typeof this._verbMap[key]);
+        for (let vm of jsonTree["verbMap"]) {
+            this._verbMap.push(new verbaction_1.VerbAction(vm));
         }
     }
 }
@@ -122,19 +228,20 @@ exports.GameObject = GameObject;
 
 
 /***/ }),
-/* 1 */
+/* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const gameinstance_1 = __webpack_require__(2);
-const inputparser_1 = __webpack_require__(6);
-var $ = __webpack_require__(8);
+const gameinstance_1 = __webpack_require__(1);
+const inputparser_1 = __webpack_require__(11);
+const actionhandler_1 = __webpack_require__(13);
+let $ = __webpack_require__(14);
 $(document).ready(function () {
-    let gi = new gameinstance_1.GameInstance("HPAssets");
+    let gi = new gameinstance_1.GameInstance();
+    gi.initFromAssets("assets/HPAssets");
     $('#mainInput').bind("enterKey", function (e, inputVal) {
-        console.log(inputparser_1.InputParser);
         let pResult = inputparser_1.InputParser.parse(inputVal);
         $('#mainOutput').text(formatOutput(pResult));
     });
@@ -145,85 +252,12 @@ $(document).ready(function () {
     });
     function formatOutput(parseResult) {
         if (parseResult.isValid()) {
-            //TODO: replace this placeholder logic
-            let outputString = parseResult.verb + " " + parseResult.nounOne;
-            if (parseResult.prep != null && parseResult.nounTwo != null) {
-                let partTwo = " " + parseResult.prep + " " + parseResult.nounTwo;
-                outputString += partTwo;
-            }
-            return outputString;
+            return actionhandler_1.ActionHandler.takeAction(gi, parseResult);
         }
         else
             return "INCORRECT: " + parseResult.toString();
     }
 });
-
-
-/***/ }),
-/* 2 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const gameobject_1 = __webpack_require__(0);
-const room_1 = __webpack_require__(3);
-const playerstate_1 = __webpack_require__(4);
-const jsonImporter_1 = __webpack_require__(5);
-class GameInstance {
-    constructor(assetRoot) {
-        this.rooms = new Array();
-        this.playerState = new playerstate_1.PlayerState();
-        this.initFromAssets(assetRoot);
-    }
-    initFromAssets(assetRoot) {
-        return __awaiter(this, void 0, void 0, function* () {
-            //find file location for rooms json files and import them
-            //find file location for objects json files and import them
-            //find file location for npc json files and import them
-            //this is placeholder stuff for testing
-            let newRoom = yield jsonImporter_1.JsonImporter.import(room_1.Room, "../HPAssets/rooms/testRoom.json");
-            let newObj = yield jsonImporter_1.JsonImporter.import(gameobject_1.GameObject, "../HPAssets/objects/sock.json");
-        });
-    }
-    takeAction(verb, nounOne, nounTwo) {
-    }
-}
-exports.GameInstance = GameInstance;
-
-
-/***/ }),
-/* 3 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const gameobject_1 = __webpack_require__(0);
-class Room extends gameobject_1.GameObject {
-    constructor(name) {
-        super();
-    }
-    deserialize(jsonTree) {
-        super.deserialize(jsonTree);
-        this._adjoiningRooms = this.getProperty(jsonTree, "adjoiningRooms");
-        for (let key in this._adjoiningRooms) {
-            if (typeof key != "string")
-                throw new Error("Invalid key type found in verbMap of " + typeof this + ". Expected string, got " + typeof key);
-            else if (typeof this._adjoiningRooms[key] != "string" && this._adjoiningRooms[key] != null)
-                throw new Error("Invalid value found in verbmap of " + typeof this + " for key: " + key + ". Expected string, got " + typeof this._adjoiningRooms[key]);
-        }
-    }
-}
-exports.Room = Room;
 
 
 /***/ }),
@@ -233,8 +267,183 @@ exports.Room = Room;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-class PlayerState {
-    constructor() { }
+const gameobject_1 = __webpack_require__(2);
+const adjoiningroomsmap_1 = __webpack_require__(6);
+const npc_1 = __webpack_require__(7);
+const gameinstance_1 = __webpack_require__(1);
+class Room extends gameobject_1.GameObject {
+    constructor(jsonTree) {
+        super(jsonTree);
+    }
+    get AdjoiningRooms() {
+        return this._adjoiningRooms;
+    }
+    set AdjoiningRooms(value) {
+        this._adjoiningRooms = value;
+    }
+    get ContainedObjects() {
+        return this._containedObjects;
+    }
+    set ContainedObjects(value) {
+        this._containedObjects = value;
+    }
+    get ContainedNpcs() {
+        return this._containedNpcs;
+    }
+    set ContainedNpcs(value) {
+        this._containedNpcs = value;
+    }
+    deserialize(jsonTree) {
+        super.deserialize(jsonTree);
+        this.ContainedObjects = new Array();
+        this.ContainedNpcs = new Array();
+        this._adjoiningRooms = new adjoiningroomsmap_1.AdjoiningRoomsMap(jsonTree.adjoiningRooms);
+        if (jsonTree.containedObjects == null)
+            throw new Error("Property 'containedObjects' could not be found for room '" + this.Name + "'");
+        for (let obj of jsonTree.containedObjects) {
+            let objData = gameinstance_1.GameInstance.assetsObject.objects[obj];
+            if (!objData)
+                throw new Error("Object '" + obj + "' not found for room '" + this.Name + "'");
+            this.ContainedObjects.push(new gameobject_1.GameObject(objData));
+        }
+        if (jsonTree.containedNpcs == null)
+            throw new Error("Property 'containedNpcs' could not be found for room '" + this.Name + "'");
+        for (let npc of jsonTree.containedNpcs) {
+            let npcData = gameinstance_1.GameInstance.assetsObject.objects[npc];
+            if (!npcData)
+                throw new Error("Npc '" + npc + "' not found for room '" + this.Name + "'");
+            this.ContainedNpcs.push(new npc_1.Npc(npcData));
+        }
+    }
+}
+exports.Room = Room;
+
+
+/***/ }),
+/* 5 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const serializable_1 = __webpack_require__(0);
+class VerbAction extends serializable_1.Serializable {
+    get Verb() {
+        return this._verb;
+    }
+    get StateResponses() {
+        return this._stateResponses;
+    }
+    get StateTransitions() {
+        return this._stateTransitions;
+    }
+    serialize() { }
+    deserialize(jsonTree) {
+        this._verb = this.getProperty(jsonTree, "verb");
+    }
+}
+exports.VerbAction = VerbAction;
+
+
+/***/ }),
+/* 6 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const serializable_1 = __webpack_require__(0);
+class AdjoiningRoomsMap extends serializable_1.Serializable {
+    constructor(jsonTree) {
+        super(jsonTree);
+        this._north = "";
+        this._south = "";
+        this._east = "";
+        this._west = "";
+        this._up = "";
+        this._down = "";
+    }
+    get North() {
+        return this._north;
+    }
+    set North(value) {
+        this._north = value;
+    }
+    get South() {
+        return this._south;
+    }
+    set South(value) {
+        this._south = value;
+    }
+    get East() {
+        return this._east;
+    }
+    set East(value) {
+        this._east = value;
+    }
+    get West() {
+        return this._west;
+    }
+    set West(value) {
+        this._west = value;
+    }
+    get Up() {
+        return this._up;
+    }
+    set Up(value) {
+        this._up = value;
+    }
+    get Down() {
+        return this._down;
+    }
+    set Down(value) {
+        this._down = value;
+    }
+    serialize() { }
+    deserialize(jsonTree) {
+        let isNullable = true;
+        this.North = this.getProperty(jsonTree, "north", isNullable);
+        this.South = this.getProperty(jsonTree, "south", isNullable);
+        this.East = this.getProperty(jsonTree, "east", isNullable);
+        this.West = this.getProperty(jsonTree, "west", isNullable);
+        this.Up = this.getProperty(jsonTree, "up", isNullable);
+        this.Down = this.getProperty(jsonTree, "down", isNullable);
+    }
+}
+exports.AdjoiningRoomsMap = AdjoiningRoomsMap;
+
+
+/***/ }),
+/* 7 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const gameobject_1 = __webpack_require__(2);
+class Npc extends gameobject_1.GameObject {
+    constructor(jsonTree) {
+        super(jsonTree);
+    }
+}
+exports.Npc = Npc;
+
+
+/***/ }),
+/* 8 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const serializable_1 = __webpack_require__(0);
+class PlayerState extends serializable_1.Serializable {
+    constructor(jsonTree) {
+        super(jsonTree);
+        this._name = "";
+        this._money = 0;
+        this._currentRoom = "";
+    }
     get Name() {
         return this._name;
     }
@@ -247,94 +456,98 @@ class PlayerState {
     set Money(value) {
         this._money = value;
     }
-    get CurrentRoomId() {
-        return this._currentRoomId;
+    get CurrentRoom() {
+        return this._currentRoom;
     }
-    set CurrentRoomId(value) {
-        this._currentRoomId = value;
+    set CurrentRoom(value) {
+        this._currentRoom = value;
     }
     serialize() { }
     deserialize(jsonTree) {
         this._name = this.getProperty(jsonTree, "name");
         this._money = this.getProperty(jsonTree, "money");
-        this._currentRoomId = this.getProperty(jsonTree, "currentRoomId");
-    }
-    getProperty(obj, prop) {
-        if (!obj.hasOwnProperty(prop))
-            throw new ReferenceError("Property " + prop + " not found for " + typeof this + " object");
-        else if (obj[prop] == undefined || obj[prop] == null)
-            throw new ReferenceError("Property " + prop + " must be defined for object " + typeof this);
-        else if (typeof obj[prop] != typeof this[prop])
-            throw new Error("Invalid type for property " + prop + " of " + typeof this + ". Expected " + typeof this[prop] + ", got " + typeof obj[prop]);
-        else
-            return obj[prop];
+        this._currentRoom = this.getProperty(jsonTree, "currentRoom");
     }
 }
 exports.PlayerState = PlayerState;
 
 
 /***/ }),
-/* 5 */
+/* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
+let fs = __webpack_require__(10);
 class JsonImporter {
-    /*	static import(type: any, filePath): Promise<Object> {
-            return new Promise (function (resolve, reject) {
-                console.log("importing " + type + " from " + filePath);
-                var request = new XMLHttpRequest();
-                request.open("GET", filePath, true);
-                request.onreadystatechange = () => {
-                    if (request.readyState === 4) {
-                        if (request.status === 200) {
-                            console.log("Loaded " + filePath);
-                            resolve(JSON.parse(request.responseText));
-                        }
-                        else {
-                            reject(request.status);
-                        }
-                    }
-                }
-                request.ontimeout = () => {
-                    reject('timeout');
-                }
-    
-                request.send(null);
-            });
-        }*/
-    static import(type, filePath) {
-        /*		fs.readDir(myDir, function(dir) {
-                  // es5
-                  for(var i = 0, l = dir.length; i < l; i++) {
-                    var filePath = dir[i];
-                    console.log(filePath)
-                  }
-                  // es6
-                  for(let filePath of dir) {
-                    console.log(filePath);
-                  }
-                });*/
+    //returns a json structure for all files found in the provided directory and optionally any within all child directories
+    static importJsonDirectory(rootPath, recursive) {
+        let directoryObject = {};
+        let dir = fs.readdirSync(rootPath);
+        for (let file of dir) {
+            let filePath = rootPath + "/" + file;
+            let stats = fs.statSync(filePath);
+            if (stats.isDirectory()) {
+                if (recursive)
+                    directoryObject[file] = JsonImporter.importJsonDirectory(filePath, recursive);
+            }
+            else if (stats.isFile()) {
+                if (JsonImporter.hasExtension(file, "json"))
+                    directoryObject[JsonImporter.removeExtension(file)] = JsonImporter.importJsonFile(filePath);
+            }
+        }
+        return directoryObject;
+    }
+    static importJsonFile(fileName) {
+        let data = fs.readFileSync(fileName, 'utf8');
+        return JSON.parse(data);
+    }
+    static removeExtension(filename) {
+        let extStart = filename.lastIndexOf(".");
+        if (extStart == -1)
+            return filename;
+        else
+            return filename.substr(0, extStart);
+    }
+    static hasExtension(filename, matchExtension) {
+        let extStart = filename.lastIndexOf(".");
+        if (extStart == -1 || extStart == filename.length)
+            return false;
+        else {
+            let extension = filename.substr(extStart + 1);
+            return extension === matchExtension;
+        }
     }
 }
 exports.JsonImporter = JsonImporter;
 
 
 /***/ }),
-/* 6 */
+/* 10 */
+/***/ (function(module, exports) {
+
+module.exports = require("fs");
+
+/***/ }),
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const arrayhelper_1 = __webpack_require__(7);
+const arrayhelper_1 = __webpack_require__(12);
 class InputParser {
     static parse(input) {
         let tokens = input.split(" ");
         let result = new ParserResult();
         //parses input according to the following pattern:
-        // [verb][ignored]*[nounOne][ignored]*([preposition][ignored]*[nounTwo])?
+        //verb : string
+        //ignored: one of the ignored tokens above
+        //noun: string
+        //preposition: one of the prepositions above
+        //
+        //verb [ignored* noun ignored* [preposition ignored* noun]]
         if (tokens.length <= 0)
             return result;
         result.verb = tokens.shift();
@@ -370,20 +583,30 @@ class ParserResult {
         this.nounTwo = null;
     }
     isValid() {
-        if (!!this.verb && !!this.nounOne) {
-            if (!!this.prep == !!this.nounTwo)
+        if (this.verb) {
+            if (this.nounOne) {
+                if (!!this.prep == !!this.nounTwo)
+                    return true;
+            }
+            else
                 return true;
         }
+        return false;
+    }
+    isSimple() {
+        if (this.prep && this.nounTwo)
+            return true;
         return false;
     }
     toString() {
         return (this.verb + " " + this.nounOne + " " + this.prep + " " + this.nounTwo);
     }
 }
+exports.ParserResult = ParserResult;
 
 
 /***/ }),
-/* 7 */
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -402,7 +625,38 @@ exports.ArrayHelper = ArrayHelper;
 
 
 /***/ }),
-/* 8 */
+/* 13 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+class ActionHandler {
+    static takeAction(gi, pResult) {
+        let errResponse = "This input could not be parsed. Let's try that again.";
+        let defaultResponse = "Generic response text. For testing, of course!";
+        if (!pResult.isValid()) {
+            return errResponse;
+        }
+        if (pResult.verb == "look") {
+            console.log(gi.Rooms);
+            console.log(gi.PlayerState);
+            let room = gi.getRoomByName(gi.PlayerState.CurrentRoom);
+            return room.LongDesc;
+        }
+        return defaultResponse;
+    }
+}
+ActionHandler.specialVerbs = {
+    look: () => {
+        return;
+    }
+};
+exports.ActionHandler = ActionHandler;
+
+
+/***/ }),
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!

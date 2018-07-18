@@ -1,12 +1,14 @@
-import { Serializable } from "./gameObject"
+import { Serializable } from "./serializable";
 
-export class PlayerState implements Serializable{
+export class PlayerState extends Serializable{
 
-	private _name: string;
-	private _money: number;
-	private _currentRoomId: number;
+	private _name: string = "";
+	private _money: number = 0;
+	private _currentRoom: string = "";
 	
-	constructor() {}
+	constructor(jsonTree: Object) {
+		super(jsonTree);
+	}
 
 	get Name(): string {
 		return this._name;
@@ -24,12 +26,12 @@ export class PlayerState implements Serializable{
 		this._money = value;
 	}
 
-	get CurrentRoomId(): number {
-		return this._currentRoomId;
+	get CurrentRoom(): string {
+		return this._currentRoom;
 	}
 
-	set CurrentRoomId(value: number) {
-		this._currentRoomId = value;
+	set CurrentRoom(value: string) {
+		this._currentRoom = value;
 	}
 
 	serialize() {}
@@ -37,17 +39,6 @@ export class PlayerState implements Serializable{
 	deserialize(jsonTree: Object) {
 		this._name = this.getProperty(jsonTree, "name");
 		this._money = this.getProperty(jsonTree, "money");
-		this._currentRoomId = this.getProperty(jsonTree, "currentRoomId");
-	}
-
-	protected getProperty(obj: Object, prop: string): any {
-		if(!obj.hasOwnProperty(prop))
-			throw new ReferenceError("Property " + prop + " not found for " + typeof this + " object");
-		else if(obj[prop] == undefined || obj[prop] == null)
-			throw new ReferenceError("Property " + prop + " must be defined for object " + typeof this);
-		else if(typeof obj[prop] != typeof this[prop])
-			throw new Error("Invalid type for property " + prop + " of " + typeof this + ". Expected " + typeof this[prop] + ", got " + typeof obj[prop]);
-		else
-			return obj[prop];
+		this._currentRoom = this.getProperty(jsonTree, "currentRoom");
 	}
 }

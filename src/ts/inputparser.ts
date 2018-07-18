@@ -11,7 +11,12 @@ export class InputParser {
 		let result: ParserResult = new ParserResult();
 
 		//parses input according to the following pattern:
-		// [verb][ignored]*[nounOne][ignored]*([preposition][ignored]*[nounTwo])?
+		//verb : string
+		//ignored: one of the ignored tokens above
+		//noun: string
+		//preposition: one of the prepositions above
+		//
+		//verb [ignored* noun ignored* [preposition ignored* noun]]
 		if(tokens.length <= 0)
 			return result;
 		result.verb = tokens.shift();
@@ -37,16 +42,25 @@ export class InputParser {
 	}
 }
 
-class ParserResult {
+export class ParserResult {
 	verb: string = null;
 	nounOne: string = null;
 	prep: string = null;
 	nounTwo: string = null;
 	isValid(): boolean {
-		if(!!this.verb && !!this.nounOne){
-			if(!!this.prep == !!this.nounTwo)
+		if(this.verb){
+			if (this.nounOne) {
+				if(!!this.prep == !!this.nounTwo)
+				return true;
+			}
+			else
 				return true;
 		}
+		return false;
+	}
+	isSimple(): boolean {
+		if (this.prep && this.nounTwo)
+			return true;
 		return false;
 	}
 	toString(): string{

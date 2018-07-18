@@ -1,14 +1,21 @@
 {
 	"name": "testRoom",
 	"displayName": "Test Room",
+	"currentState": "default",
 	"aliases": ["room"],
 	"shortDesc": "A simple room designed for testing",
 	"longDesc": "This is a room that is nondescript, plain, and uninteresting. Perfect for a test case.",
 	"defaultResponse": "This is probably not the place for doing that kind of thing.",
 	"verbMap": {
-		"explore": "There's just not that much to see here.",
-		"search": "You briefly look around the room taking note of the items here.",
-		"sniff": "A stale aroma hangs in the air. Smells like old socks."
+		"explore": {
+			"default": "There's just not that much to see here."
+		},
+		"search": {
+			"default": "You briefly look around the room taking note of the items here."
+		},
+		"sniff": {
+			"default": "A stale aroma hangs in the air. Smells like old socks."
+		}
 	},
 
 	"adjoiningRooms": {
@@ -18,5 +25,7 @@
 		"west": null,
 		"up": null,
 		"down": null
-	}
+	},
+	"containedObjects": ["sock"],
+	"containedNpcs": []
 }
